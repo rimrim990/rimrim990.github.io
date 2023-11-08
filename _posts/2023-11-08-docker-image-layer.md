@@ -3,7 +3,7 @@ layout: post
 title: 도커 이미지 레이어
 author: rimrim990
 categories: [infra]
-tags: [docker, linux]
+tags: [docker]
 toc: true
 ---
 
@@ -12,6 +12,7 @@ toc: true
 알다시피, 도커 컨테이너는 이미지를 기반으로 생성된다.
 이미지는 컨테이너 애플리케이션 실행을 위한 모든 것들로 구성되 있는데, 여기에는 애플리케이션 코드 뿐만 아니라 실행에 필요한 시스템 바이너리, 의존성 라이브러리, 설정들도 포함된다.
 
+**이미지를 구성하는 레이어**
 ```
 $ docker pull nginx:latest
 
@@ -40,7 +41,9 @@ docker.io/library/nginx:latest
 콘솔에 출력된 해시 값 한 줄 한 줄이 컨테이너 <strong>이미지</strong>에 해당한다.
 자세히 살펴보면 하나의 이미지를 구성하는 여러 레이어를 각각 별도로 다운받고 있음을 알 수 있다.
 
-이렇게 다운받은 각 레이어들은 호스트 파일 시스템에 디렉터리로 존재하게 되는데, 보통 `/var/lib/docker/` 경로 하에 존재한다.
+**레이어 디렉터리**
+
+앞서 다운받은 각 레이어들은 호스트 파일 시스템에 디렉터리로 존재하게 되는데, 보통 `/var/lib/docker/` 경로 하에 존재한다.
 
 ```
 $ pwd
@@ -52,6 +55,9 @@ $ ls -a
 앞서 도커 허브에서 다운받은 `nginx`를 구성하는 레이어 중 하나의 경로로 이동해보니, 다양한 디렉터리와 파일들이 존재했다.
 
 ### 레이어는 어떻게 생성되지?
+
+**Dockerfile 작성**
+
 도커 허브에서 컨테이너 생성에 필요한 이미지를 다운 받을 수도 있지만, `Dockerfile`을 작성하여 직접 커스텀 이미지를 빌드할 수도 있다.
 
 ```dockerfile
@@ -71,6 +77,7 @@ CMD python /app/app.py
 각 레이어는 이전 레이어에서 변경된 파일들만을 포함하고 있다.
 만약 현재 레이어에서 파일이 추가되거나 제거된다면 새로운 레이어가 생성될 것이다.
 
+**명령어 살펴보기**
 ```dockerfile
 FROM ubuntu
 ```
@@ -97,6 +104,7 @@ CMD python /app/app.py
 이미지로부터 컨테이너를 새로 시작한다면, 컨테이너 내부에서는 `python /app/app.py`가 자동으로 수행될 것이다.
 `CMD` 명령어는 이미지의 메타데이터만 변경하기 때문에 레이어를 생성하지는 않는다.
 
+**이미지 빌드하기**
 ```
 $ docker build -t test .
 
@@ -124,6 +132,8 @@ $ docker inspect test
 `inspect` 명령어로 이미지 정보를 출력해보니 실제로도 4개의 레이어가 존재했다.
 
 ### 이미지 레이어 중복의 문제
+
+**문제점**
 
 앞서 컨테이너 이미지에는 애플리케이션 코드 뿐만 아니라 시스템 바이너리, 의존성 라이브러리, 설정 등이 포함됨을 언급했었다.
 컨테이너 애플리케이션 실행을 위해 필요한 각종 파일들이 하나의 이미지로 패키징되어 있어, 간편하게 실행 환경을 구축할 수 있다.
@@ -155,7 +165,7 @@ ubuntu
 그런데 만약 컨테이너 실행 중에 새로운 파일을 작성하거나 기존 파일을 제거하는 등, 파일 시스템에 변화가 생기면 이는 어떻게 처리 될까?
 
 <figure>
-<img style="display: block; margin:auto; width: 30%" src="https://github.com/rimrim990/Algotirhm/assets/62409503/a52b6f8f-e447-4653-9785-414a296cea3c">
+<img style="display: block; margin:auto; width: 50%" src="https://github.com/rimrim990/Algotirhm/assets/62409503/a52b6f8f-e447-4653-9785-414a296cea3c">
 <figcaption style="text-align: center">[이미지 출처] Docker</figcaption>
 </figure>
 
@@ -164,7 +174,7 @@ ubuntu
 도커는 이미지 레이어에 쓰기 작업이 발생하면, 이를 컨테이너 레이어에서 처리한다.
 
 <figure>
-<img style="display: block; margin:auto; width: 30%" src="https://github.com/rimrim990/Algotirhm/assets/62409503/e354d86c-2283-438a-bb1b-696c40a76dfc">
+<img style="display: block; margin:auto; width: 50%" src="https://github.com/rimrim990/Algotirhm/assets/62409503/e354d86c-2283-438a-bb1b-696c40a76dfc">
 <figcaption style="text-align: center">[이미지 출처] Docker</figcaption>
 </figure>
 
