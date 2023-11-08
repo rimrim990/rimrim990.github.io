@@ -6,6 +6,8 @@ categories: [infra]
 tags: [docker]
 toc: true
 ---
+도커 이미지 레이어에 대해 알아보자!
+<!--break-->
 
 ## 도커 이미지
 ### 이미지 레이어 살펴보기

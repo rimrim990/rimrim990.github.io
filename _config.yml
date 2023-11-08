@@ -8,6 +8,7 @@ permalink: pretty
 cover_image: /bg.jpeg
 asset_url: /assets
 category_list: [spring, infra]
+excerpt_separator: <!--break-->
 
 # Gems
 plugins:
