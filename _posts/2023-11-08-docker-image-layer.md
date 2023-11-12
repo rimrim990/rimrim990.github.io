@@ -184,7 +184,11 @@ ubuntu
 만약 이미지 레이어에 속한 파일에 쓰기 작업이 발생하면, 우선 해당 파일을 컨테이너 레이어로 복사온다.
 이후 원본 파일이 아닌 컨테이너 레이어에 복사된 파일에 쓰기 작업을 수행한다.
 
-도커 컨테이너의 이러한 동작 방식은 오버레이 파일 시스템에서 기인한 것인데, 이는 다음 시간에 살펴보도록 하겠다!
+~~도커 컨테이너의 이러한 동작 방식은 오버레이 파일 시스템에서 기인한 것인데, 이는 다음 시간에 살펴보도록 하겠다!~~
+
+> Docker uses storage drivers to manage the contents of the image layers and the writable container layer. Each storage driver handles the implementation differently, but all drivers use stackable image layers and the copy-on-write (CoW) strategy.
+
+어떤 스토리지 드라이버를 사용하더라도 내부 구현만 다를 뿐, 이미지와 컨테이너 레이어 구조를 사용하며 복사본에 쓰기 작업을 수행한다는 점은 동일하다.
 
 ## 참고자료
 - 용찬호, 『시작하세요! 도커 / 쿠버네티스』, 위키북스(2020)

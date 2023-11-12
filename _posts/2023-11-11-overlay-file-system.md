@@ -80,6 +80,15 @@ $ sudo vi /etc/docker/daemon.json
 ```
 - 스토리지 드라이버 설정을 `overlay2`로 변경하고 도커를 재시작한다면, 이전에 생성한 이미지와 컨테이너들에 다시 접근 가능해진다
 
+**스토리지 드라이버의 공통점**
+> Docker uses storage drivers to manage the contents of the image layers and the writable container layer. Each storage driver handles the implementation differently, but all drivers use stackable image layers and the copy-on-write (CoW) strategy.
+
+도커는 여러가지 스토리지 드라이버를 제공하는데, 어떤 것을 사용하더라도 이미지와 컨테이너 레이어 구조는 동일하게 적용된다. 또한 뒤에서 살펴볼 `CoW` 전략도 모든 스토리지 드라이버에서 사용한다고 한다.
+
+> A storage driver handles the details about the way these layers interact with each other
+
+스토리지 드라이버 간 차이는 레이어끼리의 상호 작용을 내부적으로 어떻게 구현했는지에 있다.
+
 ## OverlayFS
 
 ### OverlayFS 무엇인가?
