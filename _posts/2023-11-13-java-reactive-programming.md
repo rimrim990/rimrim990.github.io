@@ -108,7 +108,7 @@ toc: true
 ### 리액티브 프로그래밍의 탄생
 
 정리하면 옵저버 패턴에는 다음과 같은 문제점이 존재한다
-- 발행자는 구독자가 처리 없을 만큼의 많은 메시지를 전달할 수도 있다
+- 발행자는 구독자가 처리할 수 없을 만큼의 많은 메시지를 전달할 수도 있다
 - 발행자의 메시지 전송 완료나 예외 상황에 대한 정의가 없다
 
 리액티브 스트림은 이러한 문제점들을 보완하면서, 비동기적으로 데이터를 처리할 수 있는 표준을 정의하고 있다.
@@ -149,11 +149,10 @@ public interface Subscriber<T> {
     public void onComplete();
 }
 ```
--
-- `Subscriber`는 `Publisher`에 구독을 신청하면 `onSubscribe` 콜백을 호출받는다.
-- `Subscriber`는 `onNext` 콜백 호출로 데이터를 전달받는다.
-- `Subscriber`는 `onError` 콜백 호출로 데이터 처리 중 예외가 발생했음을 통지받는다.
-- `Subscriber`는 `onComplete` 콜백 호출로 데이터 전달이 완료되었음을 통지받는다.
+- `Subscriber`는 `Publisher`에 구독을 신청하면 `onSubscribe` 콜백을 호출받는다
+- `Subscriber`는 `onNext` 콜백 호출로 데이터를 전달받는다
+- `Subscriber`는 `onError` 콜백 호출로 데이터 처리 중 예외가 발생했음을 통지받는다
+- `Subscriber`는 `onComplete` 콜백 호출로 데이터 전달이 완료되었음을 통지받는다
 
 4개의 콜백 메서드는 리액티브 스트림에서 정의한 순서대로 호출되어야 한다
 
