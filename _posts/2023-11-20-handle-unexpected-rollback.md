@@ -5,7 +5,7 @@ author: rimrim990
 tags: [issue, spring]
 toc: true
 ---
-2023.07월 우아한 테크캠프 6기 미션을 수행하면서 마주한 `UnexpectedRollbackException` 해결 과정을 정리한 글입니다.
+2023년 08월 우테캠 6기 미션을 수행하면서 마주한 `UnexpectedRollbackException` 해결 과정을 정리해보자!
 <!--break-->
 
 ## UnexpectedRolblackException
@@ -33,7 +33,6 @@ org.springframework.transaction.UnexpectedRollbackException: Transaction silentl
 당시 예외가 던져진 코드는 다음과 같았다.
 
 ```java
-
 @Service
 @Transactional
 public class CartProductService {
@@ -278,7 +277,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 ### 트랜잭션 전파속성이 뭐지?
 
 트랜잭션 전파속성은 **트랜잭션이 실행 중인 상황에서 새로운 트랜잭션을 생성**하려고 할 때, 이를 어떤 방식으로 처리할지 정의한다.
-- 스프링 트랜잭션은 기본적으로 스레드에 묶이는 개념이기 때문에, 동일한 스레드에서 트랜잭션을 생성해야 한다
+주의할 점은, **스프링 트랜잭션은 기본적으로 스레드에 묶이는 개념**이기 때문에 **동일한 스레드에서 트랜잭션을 생성**해야 한다
 
 ```java
 @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -287,15 +286,18 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 - 별도로 설정하지 않으면 `PROPAGATION_REQUIRED`가 기본 값으로 사용된다
 
 스프링에서는 여러 가지 트랜잭션 전파속성을 제공하지만, 대표적으로 두 가지 속성만 살펴보도록 하겠다.
+그전에, 스프링 트랜잭션이 어떤 특징을 갖는지 잠깐 알아보자.
 
-**PROPAGATION_REQUIRED**
+**스프링 트랜잭션의 특징**
 
 스프링에서는 `@Transaction` 애너테이션으로 생성된 트랜잭션들을 **물리적 트랜잭션**과 **논리적 트랜잭션**으로 구분한다.
 
 - 물리적 트랜잭션은 실제로 데이터베이스 트랜잭션을 시작한 **진짜 트랜잭션**이다
 - 논리적 기존에 생성된 물리적 트랜잭션에 참여하는 **개념적인 트랜잭션**이다
 - 논리적 트랜잭션은 물리적 트랜잭션에 참여한 개념적인 트랜잭션이기 때문에, 물리적 트랜잭션의 **설정 값들을 그대로 상속** 받는다
-  - 설정 값에는 트랜잭션 타임아웃, 격리 수준, 읽기 전용 트랜잭션 여부 등이 해당됨
+  - 설정 값에는 트랜잭션 타임아웃, 격리 수준, 읽기 전용 트랜잭션 여부 등이 해당된다
+
+**PROPAGATION_REQUIRED**
 
 <figure>
 <img style="display: block; margin:auto; width: 70%" src="https://camo.githubusercontent.com/0a1b949dbcdc28d07b9ebe56f3a9d5180ce040ac33b86ac811d871e565d9d8ad/68747470733a2f2f646f63732e737072696e672e696f2f737072696e672d6672616d65776f726b2f7265666572656e63652f5f696d616765732f74785f70726f705f72657175697265642e706e67">
@@ -326,6 +328,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 > the outer transaction has not decided on the rollback itself, so the rollback (silently triggered
 > by the inner transaction scope) is unexpected.
 > A corresponding UnexpectedRollbackException is thrown at that point.
+
 - 기존에 실행중이던 트랜잭션을 아우터 트랜잭션, 중첩적으로 생성된 트랜잭션을 이너 트랜잭션이라고 표현하고 있다
 - `PROPAGATION_REQUIRED` 전파 속성을 사용할 경우, 외부 트랜잭션은 내부 트랜잭션의 롤백으로 인해 의도치 않게 롤백될 수 있다
 - 외부 트랜잭션은 롤백 마커에 의해 의도치 않은 롤백이 수행되면 `UnexpectedRollbackException` 예외를 던진다
@@ -385,13 +388,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 요구사항을 어떻게 정의하는지에 따라 달라질 수 있겠지만, 쇼핑몰 프로젝트에서는 `findOneByMemberIdAndProductId()` 메서드에서는 예외를 던질 필요가 없었다.
 
 ```java
-return entityManager.createQuery(
-          "select c from CartProduct c where c.member.id = :memberId and c.product.id = :productId",
+return entityManager.createQuery("select c from CartProduct c where c.member.id = :memberId and c.product.id = :productId",
           CartProduct.class)
-        .setParameter("productId", productId)
-        .setParameter("memberId", memberId)
-        // 조회 결과가 없으면 NoResultException 발생!
-        .getSingleResult();
+    .setParameter("productId", productId)
+    .setParameter("memberId", memberId)
+    // 조회 결과가 없으면 NoResultException 발생!
+    .getSingleResult();
 ```
 - 사실 `getSingleResult()` 메서드 자체가 조회 결과가 없으면 예외를 던지도록 정의되었기 때문에 예외를 던질 수 밖에 없었다
 
@@ -400,13 +402,15 @@ return entityManager.createQuery(
 
 ```java
 @Transactional(readOnly = true)
-public Optional<Car> findById(final Long id) {
+public Optional<CartProduct> findOneByMemberIdAndProductId(Long memberId, Long productId) {
     // Optional 타입을 반환하도록 수정하기
-    return em.createQuery("SELECT c FROM Car c WHERE c.id = :id", Car.class)
-            .setParameter("id", id)
-            .getResultList()
-            .stream()
-            .findFirst();
+    return entityManager.createQuery("select c from CartProduct c where c.member.id = :memberId and c.product.id = :productId",
+            CartProduct.class)
+        .setParameter("productId", productId)
+        .setParameter("memberId", memberId)
+        .getResultList()
+        .stream()
+        .findFirst();
 }
 ```
 - `Spring Data JPA`를 사용하면 간편하게 반환 타입을 `Optional`로 지정할 수 있다
