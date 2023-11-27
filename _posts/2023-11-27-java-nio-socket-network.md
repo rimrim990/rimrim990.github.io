@@ -216,9 +216,105 @@ for (SelectionKey key : selectedKeys) {
 ```
 - 키셋을 순회하며 `SelectionKey`가 가리키는 작업 유형에 따라 적절히 처리해준다
 
-**셀렉터로 동시성 향상하기**
+## NIO 사용하기
+### 논블로킹 서버 구현
+NIO를 사용해 논블로킹 서버를 구현해보자. 전체 코드는 다음과 같다.
 
-셀렉터를 사용해 싱글 스레드만으로도 여러 소켓 채널을 처리할 수 있다.
-- 작업 처리가 가능해질 때까지 하나의 메서드에서 블로킹되지 않고 다른 작업을 처리할 수 있다
+```java
+public class NioServer {
 
-만약 오래 걸리는 작업이 존재할 경우, 이를 다른 스레드에 위임해 처리 성능을 향상시킬 수 있다.
+    private static final int PORT = 8000;
+    private static final Charset CHARSET = Charset.forName("UTF-8");
+
+    public static void main(String[] args)  {
+        try {
+            Selector selector = Selector.open();
+            ServerSocketChannel serverSocket = ServerSocketChannel.open();
+            serverSocket.bind(new InetSocketAddress("localhost", PORT));
+            serverSocket.configureBlocking(false);
+            serverSocket.register(selector, SelectionKey.OP_ACCEPT);
+            ByteBuffer buffer = ByteBuffer.allocate(256);
+
+            while (true) {
+                selector.select();
+                Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                for (SelectionKey key : selectedKeys) {
+
+                    if (key.isAcceptable()) {
+                        accept(selector, serverSocket);
+                    }
+
+                    if (key.isReadable()) {
+                        read(buffer, key);
+                    }
+                }
+
+                selectedKeys.clear();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void read(ByteBuffer buffer, SelectionKey key) throws IOException {
+        // 클라이언트 요청 읽기
+        SocketChannel client = (SocketChannel) key.channel();
+        client.read(buffer);
+        buffer.flip();
+        log.info("client send request: {}", Charset.defaultCharset().decode(buffer));
+
+        buffer.clear();
+        key.cancel();
+        client.close();
+    }
+
+    private static void accept(Selector selector, ServerSocketChannel serverSocket) throws IOException {
+        SocketChannel client = serverSocket.accept();
+        if (client != null) {
+            client.configureBlocking(false);
+            client.register(selector, SelectionKey.OP_READ);
+        }
+    }
+}
+```
+
+**클라이언트 소켓 연결 수락하기**
+```java
+Selector selector = Selector.open();
+ServerSocketChannel serverSocket = ServerSocketChannel.open();
+serverSocket.bind(new InetSocketAddress("localhost", PORT));
+serverSocket.configureBlocking(false);
+serverSocket.register(selector, SelectionKey.OP_ACCEPT);
+```
+- 논블로킹 서버 소켓 채널을 생성한다
+- 클라이언트 연결 요청 작업인 `OP_ACCEPT`를 셀렉터에 등록한다
+
+```java
+private static void accept(Selector selector, ServerSocketChannel serverSocket) throws IOException {
+    SocketChannel client = serverSocket.accept();
+    if (client != null) {
+        client.configureBlocking(false);
+        client.register(selector, SelectionKey.OP_READ);
+    }
+}
+```
+- 클라이언트 소켓의 연결 요청이 들어오면 `accept()` 메서드가 이를 처리한다
+- `accept()`를 호출해 연결 요청을 수락한 후 읽기 작업을 셀렉터에 등록한다
+
+**클라이언트 요청 읽기**
+```java
+private static void read(ByteBuffer buffer, SelectionKey key) throws IOException {
+    SocketChannel client = (SocketChannel) key.channel();
+    client.read(buffer);
+    buffer.flip();
+    log.info("client request: {}", CHARSET.decode(buffer));
+
+    buffer.clear();
+    key.cancel();
+    client.close();
+}
+```
+- 클라이언트로부터 요청이 들어오면 `read()` 메서드가 이를 처리한다
+- 클라이언트 요청을 읽어 버퍼에 저장한 후 출력한다
+- 클라이언트와 연결을 종료한다
+
