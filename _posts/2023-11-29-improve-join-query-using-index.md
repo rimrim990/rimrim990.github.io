@@ -13,7 +13,7 @@ toc: true
 쇼핑몰 팀 프로젝트를 진행하면서 **키워드로 상품을 검색한 후 주문 많은 순으로 정렬하는 쿼리**를 작성하였다.
 당시 작성한 쿼리는 아래와 같다.
 
-```mysql
+```sql
 SELECT p.* FROM products p
 LEFT JOIN order_items oi ON p.id = oi.product_id
 WHERE p.name LIKE '%keyword%'
@@ -31,7 +31,7 @@ LIMIT 20;
 
 연관된 상품 간에 참조관계가 존재하긴 하나, 외래키 제약을 적용하진 않았다.
 
-<figure>
+<figure style="margin-bottom: 10px">
 <img src="https://github.com/rimrim990/TIL/assets/62409503/0eab5cd5-2ee3-472c-9176-ecf851f98032" width="500"/>
 <figcaption style="text-align: center">데이터베이스 스키마 일부</figcaption>
 </figure>
@@ -47,7 +47,7 @@ LIMIT 20;
 - 250만여 건의 `order_items` 레코드
 
 각 상품마다 평균적으로 250개의 주문 상품 정보가 존재한다. 즉 다음과 같은 쿼리를 수행하면 250이 평균값으로 도출된다.
-```mysql
+```sql
 # 250.3262
 SELECT AVG(a.cnt) AS avg
 FROM
@@ -57,7 +57,7 @@ FROM
 ```
 
 상품별 주문 상품 개수의 최소값과 최대값은 다음과 같았다. **주문 상품의 수는 평균이 250인 정규 분표**를 갖는다.
-```mysql
+```sql
 # 192,312
 SELECT MIN(a.cnt) AS min, MAX(a.cnt) AS max
 FROM
@@ -69,14 +69,14 @@ FROM
 ### 쿼리 성능 측정
 이제 쿼리를 실행해보자. 사용자 A가 **상품명에 '니트'를 포함하는 상품**을 검색하는 상황을 가정해보자.
 
-<figure>
+<figure style="margin-bottom: 10px">
 <img width="806" src="https://github.com/rimrim990/TIL/assets/62409503/27ffec08-b22c-42b6-b772-2434d7c209ec">
 <figcaption style="text-align: center">'니트'가 포함된 상품을 검색하는 쿼리</figcaption>
 </figure>
 
 데이터를 가져오는데 무려 11초나 소요되었다. 심지어 한 글자 키워드로 검색하면 더 오래 걸린다.
 
-<figure>
+<figure style="margin-bottom: 10px">
 <img width="806" src="https://github.com/rimrim990/TIL/assets/62409503/4ec0a959-6a57-41fa-93dd-d905ed32f7fa">
 <figcaption style="text-align: center">'니'가 포함된 상품을 검색하는 쿼리</figcaption>
 </figure>
@@ -92,7 +92,7 @@ MySQL에서는 `EXPLAIN` 키워드를 추가해 실행 계획을 살펴볼 수 �
 ### 쿼리 실행 계획 확인
 쿼리에 `EXPLAIN` 커맨드를 추가해 실행 계획을 출력해보았다.
 
-```mysql
+```sql
 EXPLAIN SELECT p.* FROM products p
 LEFT JOIN order_items oi ON p.id = oi.product_id
 WHERE p.name LIKE '%니%'
@@ -103,10 +103,10 @@ LIMIT 20;
 
 문제 쿼리의 실행 계획은 다음과 같았다.
 
-| id  | select_type | table | type | possible_keys | key  | key_len | ref  | rows     | Extra                                           |
-|-----|-------------|-------|------|---------------|------|---------|------|----------|-------------------------------------------------|
-| 1   | SIMPLE      | p     | ALL  | null          | null | null    | null | 9143     | Using where; Using temporary; Using filesort    |
-| 1   | SIMPLE      | oi    | ALL  | null          | null | null    | null | 20947799 | Using where; Using join buffer (flat, BNL join) |
+| id  | select_type | table | type | key  | key_len | ref  | rows     | Extra                                           |
+|-----|-------------|-------|------|------|---------|------|----------|-------------------------------------------------|
+| 1   | SIMPLE      | p     | ALL  | null | null    | null | 9143     | Using where; Using temporary; Using filesort    |
+| 1   | SIMPLE      | oi    | ALL  | null | null    | null | 20947799 | Using where; Using join buffer (flat, BNL join) |
 
 
 ### EXPLAIN 출력 형식
@@ -116,7 +116,6 @@ LIMIT 20;
 
 > EXPLAIN returns a row of information for each table used in the SELECT statement.
 > It lists the tables in the output in the order that MySQL would read them while processing the statement.
-> This means that MySQL reads a row from the first table, then finds a matching row in the second table, and then in the third table, and so on. (MySQL)
 
 `EXPLAIN`은 `SELECT` 쿼리 실행을 위해 **접급한 테이블**마다 **순차적으로** 행을 생성한다.
 
@@ -179,10 +178,10 @@ Extra 칼럼에 아래와 같은 값들이 올 수 있다.
 쿼리 실행 계획에 어떤 값이 올 수 있는지 간단하게 살펴보았다.
 이제 문제 쿼리의 실행 계획을 분석해보자.
 
-| id  | select_type | table | type | possible_keys | key  | key_len | ref  | rows     | Extra                                           |
-|-----|-------------|-------|------|---------------|------|---------|------|----------|-------------------------------------------------|
-| 1   | SIMPLE      | p     | ALL  | null          | null | null    | null | 9143     | Using where; Using temporary; Using filesort    |
-| 1   | SIMPLE      | oi    | ALL  | null          | null | null    | null | 20947799 | Using where; Using join buffer (flat, BNL join) |
+| id  | select_type | table | type | key  | key_len | ref  | rows     | Extra                                           |
+|-----|-------------|-------|------|------|---------|------|----------|-------------------------------------------------|
+| 1   | SIMPLE      | p     | ALL  | null | null    | null | 9143     | Using where; Using temporary; Using filesort    |
+| 1   | SIMPLE      | oi    | ALL  | null | null    | null | 20947799 | Using where; Using join buffer (flat, BNL join) |
 
 - type 칼럼이 ALL 이므로 모든 테이블을 **풀 테이블 스캔** 했음을 알 수 있다
 - key 칼럼이 null 이므로 모든 테이블에서 **인덱스를 사용하지 않았음**을 알 수 있다
@@ -236,7 +235,7 @@ for each row in t1 {
 
 **단일 칼럼 인덱스 추가하기**
 
-```mysql
+```sql
 EXPLAIN SELECT p.* FROM products p
 LEFT JOIN order_items oi ON p.id = oi.product_id
 WHERE p.name LIKE '%니%'
@@ -249,13 +248,13 @@ LIMIT 20;
 따라서 `product_id` 칼럼에 인덱스를 추가해야 한다.
 
 `product_id` 칼럼에 인덱스를 추가하였다.
-```mysql
-create index idx_order_items_products on order_items(product_id);
+```sql
+create index idx_products on order_items(product_id);
 ```
 
 이제 쿼리 수행 시간을 다시 측정해보자.
 
-<figure>
+<figure style="margin-bottom: 10px">
 <img width="806" src="https://github.com/rimrim990/TIL/assets/62409503/b3cca52a-24de-4433-80cd-ad6a7d6f8887">
 <figcaption style="text-align: center">'니'가 포함된 상품을 검색하는 쿼리</figcaption>
 </figure>
@@ -270,7 +269,7 @@ create index idx_order_items_products on order_items(product_id);
 기존의 인덱스를 **커버링 인덱스**로 변경하여 쿼리 수행 시간을 더 단축할 수 있다.
 문제의 쿼리를 살펴보면, `order_items` 레코드에서 사용되는 칼럼은 `product_id`와 `quantity` 밖에 없음을 알 수 있다.
 
-```mysql
+```sql
 EXPLAIN SELECT p.* FROM products p
 LEFT JOIN order_items oi ON p.id = oi.product_id
 WHERE p.name LIKE '%니%'
@@ -288,15 +287,15 @@ LIMIT 20;
 기존의 인덱스를 제거한 후 새로운 인덱스를 다시 생성해보자.
 - 프로젝트에서 `product_id`와 `quantity`는 불변 값이었기에 인덱스를 생성하기 적절하다고 판단했다
 
-```mysql
-drop index idx_order_items_products on order_items;
-create index idx_order_items_products on order_items(product_id, quantity);
+```sql
+drop index idx_products on order_items;
+create index idx_products on order_items(product_id, quantity);
 ```
 - `product_id`와 `quantity`를 키 값으로 사용하도록 수정하였다
 
 커버링 인덱스를 사용한 쿼리의 수행 시간은 어떻게 개선되었을까? 측정해보자.
 
-<figure>
+<figure style="margin-bottom: 10px">
 <img width="806" src="https://github.com/rimrim990/TIL/assets/62409503/d58fdd51-efcb-4330-b1a4-eaba685c059d">
 <figcaption style="text-align: center">'니'가 포함된 상품을 검색하는 쿼리</figcaption>
 </figure>
@@ -309,10 +308,10 @@ create index idx_order_items_products on order_items(product_id, quantity);
 
 인덱스가 추가되고 문제 쿼리의 실행 계획은 다음과 같이 변했다.
 
-| id  | select_type | table | type  | possible_keys            | key                      | key_len | ref           | rows | Extra                                        |
-|-----|-------------|-------|-------|--------------------------|--------------------------|---------|---------------|------|----------------------------------------------|
-| 1   | SIMPLE      | p     | index | null                     | PRIMARY                  | 8       | null          | 9143 | Using where; Using temporary; Using filesort |
-| 1   | SIMPLE      | oi    | ref   | idx_order_items_products | idx_order_items_products | 8       | shopping.p.id | 193  | Using index;                                 |
+| id  | select_type | table | type  | key          | key_len | ref           | rows | Extra        |
+|-----|-------------|-------|-------|--------------|---------|---------------|------|--------------|
+| 1   | SIMPLE      | p     | index | PRIMARY      | 8       | null          | 9143 | ...          |
+| 1   | SIMPLE      | oi    | ref   | idx_products | 8       | shopping.p.id | 193  | Using index; |
 
 - type 칼럼이 ref 이므로 `order_items` 테이블에 접근하기 위해 인덱스를 사용했음을 알 수 있다
 - Extra 칼럼에 Using index 코멘트가 있으므로 커버링 인덱스를 사용했음을 알 수 있다
